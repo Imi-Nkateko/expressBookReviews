@@ -5,6 +5,34 @@ const customer_routes = require('./router/auth_users.js').authenticated;
 const genl_routes = require('./router/general.js').general;
 
 const app = express();
+// Import the books object
+const books = require("./booksdb.js");
+
+// Task 10: Get all books (for Axios call)
+app.get("/api/books", (req, res) => {
+  let result = Object.values(books);
+  if (req.query.author) {
+    result = result.filter(b => b.author === req.query.author);
+  }
+  if (req.query.title) {
+    result = result.filter(b => b.title === req.query.title);
+  }
+  res.json(result);
+});
+
+// Get a single book by ISBN
+app.get("/api/books/:isbn", (req, res) => {
+  const book = books[req.params.isbn];
+  if (book) res.json(book);
+  else res.status(404).json({ message: "Book not found" });
+});
+
+// Get reviews by ISBN
+app.get("/api/books/:isbn/reviews", (req, res) => {
+  const book = books[req.params.isbn];
+  if (book) res.json(book.reviews || {});
+  else res.status(404).json({ message: "Book not found" });
+});
 
 app.use(express.json());
 
