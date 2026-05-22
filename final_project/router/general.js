@@ -1,13 +1,12 @@
 const express = require("express");
-const axios = require("axios"); 
+const axios = require("axios");
 let isValid = require("./auth_users.js").isValid;
 let users = require("./auth_users.js").users;
 const public_users = express.Router();
 
-// Helper: Base URL for internal API calls (assuming server runs on same port)
-const API_BASE = "http://localhost:8800";
+const API_BASE = "http://localhost:8800/api"; // base for internal API
 
-// User registration (remains synchronous as it doesn't fetch book data)
+// Register (unchanged, no Axios needed)
 public_users.post("/register", (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) {
@@ -20,72 +19,73 @@ public_users.post("/register", (req, res) => {
   return res.status(201).json({ message: "User registered successfully" });
 });
 
-// Get the book list available in the shop (using Axios)
-public_users.get("/", async function (req, res) {
+// Get all books (using Axios)
+public_users.get("/", async (req, res) => {
   try {
     const response = await axios.get(`${API_BASE}/books`);
-    return res.status(200).json(response.data);
-  } catch (error) {
-    return res.status(500).json({ message: "Error fetching book list", error: error.message });
+    res.status(200).json(response.data);
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching books", error: err.message });
   }
 });
 
-// Get book details based on ISBN (using Axios)
-public_users.get("/isbn/:isbn", async function (req, res) {
+// Get book by ISBN
+public_users.get("/isbn/:isbn", async (req, res) => {
   const isbn = req.params.isbn;
   try {
     const response = await axios.get(`${API_BASE}/books/${isbn}`);
-    return res.status(200).json(response.data);
-  } catch (error) {
-    if (error.response && error.response.status === 404) {
+    res.status(200).json(response.data);
+  } catch (err) {
+    if (err.response && err.response.status === 404) {
       return res.status(404).json({ message: "Book not found" });
     }
-    return res.status(500).json({ message: "Error fetching book", error: error.message });
+    res.status(500).json({ message: "Error fetching book" });
   }
 });
 
-// Get book details based on author (using Axios)
-public_users.get("/author/:author", async function (req, res) {
+// Get books by author
+public_users.get("/author/:author", async (req, res) => {
   const author = req.params.author;
   try {
     const response = await axios.get(`${API_BASE}/books?author=${encodeURIComponent(author)}`);
     if (response.data.length === 0) {
       return res.status(404).json({ message: "No books found by this author" });
     }
-    return res.status(200).json(response.data);
-  } catch (error) {
-    return res.status(500).json({ message: "Error fetching books by author", error: error.message });
+    res.status(200).json(response.data);
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching books by author" });
   }
 });
 
-// Get all books based on title (using Axios)
-public_users.get("/title/:title", async function (req, res) {
+// Get books by title
+public_users.get("/title/:title", async (req, res) => {
   const title = req.params.title;
   try {
     const response = await axios.get(`${API_BASE}/books?title=${encodeURIComponent(title)}`);
     if (response.data.length === 0) {
       return res.status(404).json({ message: "No books found with this title" });
     }
-    return res.status(200).json(response.data);
-  } catch (error) {
-    return res.status(500).json({ message: "Error fetching books by title", error: error.message });
+    res.status(200).json(response.data);
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching books by title" });
   }
 });
 
-// Get book review (using Axios)
-public_users.get("/review/:isbn", async function (req, res) {
+// Get reviews by ISBN
+public_users.get("/review/:isbn", async (req, res) => {
   const isbn = req.params.isbn;
   try {
     const response = await axios.get(`${API_BASE}/books/${isbn}/reviews`);
-    if (!response.data || Object.keys(response.data).length === 0) {
+    const reviews = response.data;
+    if (Object.keys(reviews).length === 0) {
       return res.status(200).json({ message: "No reviews for this book yet" });
     }
-    return res.status(200).json(response.data);
-  } catch (error) {
-    if (error.response && error.response.status === 404) {
+    res.status(200).json(reviews);
+  } catch (err) {
+    if (err.response && err.response.status === 404) {
       return res.status(404).json({ message: "Book not found" });
     }
-    return res.status(500).json({ message: "Error fetching reviews", error: error.message });
+    res.status(500).json({ message: "Error fetching reviews" });
   }
 });
 
